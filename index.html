@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A1A2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pointeuse AM">
+<title>Pointeuse Assistante Maternelle</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F1EE;
+  --surface: #FFFFFF;
+  --surface2: #FAF8F6;
+  --deep: #1A1A2E;
+  --mid: #6B6475;
+  --light: #B0A8B9;
+  --border: rgba(0,0,0,0.07);
+
+  /* Couleur active de l'enfant sélectionné */
+  --child-color: #E07A5F;
+  --child-light: #F9EBE7;
+  --child-dark: #B85C44;
+
+  /* Palette enfants */
+  --c0: #E07A5F; /* terracotta */
+  --c1: #3D9A7A; /* vert */
+  --c2: #5B7FBF; /* bleu */
+  --c3: #9B72B0; /* violet */
+  --c4: #D4875A; /* orange */
+  --c5: #4AABB8; /* cyan */
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --green: #3D9A7A;
+  --red: #C0473A;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--deep); }
+
+/* ══════════════════════════════════
+   HEADER
+══════════════════════════════════ */
+.header {
+  background: var(--deep);
+  padding: calc(var(--safe-top) + 12px) 16px 0;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.header-top h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: white;
+  letter-spacing: 0.01em;
+}
+
+.header-top h1 span { color: var(--child-color); transition: color 0.3s; }
+
+.month-nav {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; font-weight: 700;
+  color: rgba(255,255,255,0.75);
+}
+.month-nav button {
+  background: rgba(255,255,255,0.12); border: none;
+  color: white; width: 28px; height: 28px; border-radius: 50%;
+  cursor: pointer; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ══════════════════════════════════
+   CHILD TABS (scrollable top bar)
+══════════════════════════════════ */
+.child-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  padding-bottom: 0;
+  scrollbar-width: none;
+}
+.child-tabs::-webkit-scrollbar { display: none; }
+
+.child-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.child-tab.active { color: white; }
+
+.child-tab .tab-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; font-weight: 800;
+  background: rgba(255,255,255,0.1);
+  transition: background 0.2s, transform 0.2s;
+  border: 2px solid transparent;
+}
+
+.child-tab.active .tab-avatar {
+  background: var(--child-color);
+  border-color: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+}
+
+.child-tab .tab-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: transparent;
+  border-radius: 3px 3px 0 0;
+  transition: background 0.2s;
+}
+.child-tab.active .tab-bar { background: var(--child-color); }
+
+.child-tab .present-dot {
+  position: absolute; top: 6px; right: 10px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #4CAF50;
+  border: 2px solid var(--deep);
+  display: none;
+}
+.child-tab.is-present .present-dot { display: block; }
+
+/* TAB "Réglages" spécial */
+.child-tab.settings-tab {
+  color: rgba(255,255,255,0.4);
+  padding: 8px 12px 10px;
+}
+.child-tab.settings-tab.active { color: rgba(255,255,255,0.9); }
+.child-tab.settings-tab .tab-avatar { font-size: 1rem; }
+
+/* ══════════════════════════════════
+   SUB-TABS (Pointage / Journal / Récap)
+══════════════════════════════════ */
+.sub-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sub-tab {
+  flex: 1; padding: 11px 4px;
+  border: none; background: transparent;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--light);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  transition: color 0.2s;
+}
+.sub-tab.active { color: var(--child-color); }
+.sub-tab::after {
+  content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+  height: 2.5px; background: transparent; border-radius: 2px;
+  transition: background 0.2s;
+}
+.sub-tab.active::after { background: var(--child-color); }
+
+/* ══════════════════════════════════
+   CONTENT AREA
+══════════════════════════════════ */
+.content {
+  flex: 1; overflow-y: auto;
+  padding: 16px 14px;
+  padding-bottom: calc(var(--safe-bottom) + 20px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ══════════════════════════════════
+   LAYOUT
+══════════════════════════════════ */
+body { display: flex; flex-direction: column; }
+
+/* ══════════════════════════════════
+   CARDS
+══════════════════════════════════ */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 18px 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+
+.card-title {
+  font-size: 0.88rem; font-weight: 800;
+  color: var(--deep); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 7px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════
+   CHILD BANNER
+══════════════════════════════════ */
+.child-banner {
+  border-radius: 20px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--child-color);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transition: background 0.3s;
+}
+
+.child-banner-left { display: flex; align-items: center; gap: 14px; }
+
+.child-banner-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 900; color: white;
+  border: 3px solid rgba(255,255,255,0.4);
+  font-family: 'Nunito', sans-serif;
+}
+
+.child-banner-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700; color: white;
+}
+
+.child-banner-detail {
+  font-size: 0.78rem; color: rgba(255,255,255,0.75);
+  margin-top: 2px; font-weight: 600;
+}
+
+.child-status-badge {
+  padding: 7px 14px; border-radius: 20px;
+  background: rgba(255,255,255,0.2);
+  color: white; font-size: 0.78rem; font-weight: 700;
+  display: flex; align-items: center; gap: 5px;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.dot-pulse { width: 7px; height: 7px; border-radius: 50%; background: #A8FF78; animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+/* ══════════════════════════════════
+   FORM FIELDS
+══════════════════════════════════ */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field:last-of-type { margin-bottom: 0; }
+
+.field label {
+  font-size: 0.68rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--mid);
+}
+
+.field input, .field select {
+  background: var(--bg);
+  border: 1.5px solid rgba(0,0,0,0.09);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem; font-weight: 600;
+  color: var(--deep); outline: none;
+  width: 100%; -webkit-appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--child-color);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+}
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* ══════════════════════════════════
+   BUTTONS
+══════════════════════════════════ */
+.btn {
+  width: 100%; padding: 14px 16px;
+  border-radius: 14px; border: none;
+  cursor: pointer; font-family: 'Nunito', sans-serif;
+  font-weight: 800; font-size: 0.95rem;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.12s, box-shadow 0.12s;
+  -webkit-appearance: none; letter-spacing: 0.02em;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-arrive {
+  background: var(--green); color: white;
+  box-shadow: 0 4px 16px rgba(61,154,122,0.4);
+}
+.btn-depart {
+  background: var(--red); color: white;
+  box-shadow: 0 4px 16px rgba(192,71,58,0.4);
+}
+.btn-child {
+  background: var(--child-color); color: white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transition: background 0.3s, box-shadow 0.3s, transform 0.12s;
+}
+.btn-dark { background: var(--deep); color: white; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.btn-outline {
+  background: transparent; color: var(--child-color);
+  border: 2px solid var(--child-color); box-shadow: none;
+}
+.btn-ghost {
+  background: var(--bg); color: var(--mid);
+  border: 1.5px solid var(--border); box-shadow: none;
+}
+.btn-danger { background: #FFF0EF; color: var(--red); border: none; box-shadow: none; }
+.btn-sm { width: auto; padding: 8px 16px; font-size: 0.82rem; border-radius: 10px; }
+.btn + .btn { margin-top: 8px; }
+
+/* ══════════════════════════════════
+   JOURNAL ENTRIES
+══════════════════════════════════ */
+.entry-list { display: flex; flex-direction: column; gap: 10px; }
+
+.entry {
+  background: var(--surface);
+  border-radius: 16px; padding: 14px 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+
+.entry.en-cours {
+  background: #FFFBF0;
+  border-color: #FFD54F;
+  border-left: 4px solid #FFB300;
+}
+
+.entry-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.entry-date { font-size: 0.82rem; font-weight: 800; color: var(--deep); }
+.entry-weekday { font-size: 0.72rem; color: var(--mid); font-weight: 600; margin-top: 1px; }
+
+.entry-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--light); font-size: 1rem; padding: 2px 4px;
+  border-radius: 6px;
+}
+.entry-del:active { background: #FFF0EF; color: var(--red); }
+
+.entry-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.entry-cell { display: flex; flex-direction: column; gap: 2px; }
+.entry-cell .lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--light); font-weight: 800; }
+.entry-cell .val { font-size: 0.9rem; font-weight: 800; color: var(--deep); }
+.entry-cell .val.dur { color: var(--child-color); }
+.entry-cell .val.sal { color: var(--green); }
+.entry-cell .val.enc { color: #E65100; font-size: 0.78rem; }
+
+/* ══════════════════════════════════
+   RECAP / TOTAUX
+══════════════════════════════════ */
+.recap-hero {
+  border-radius: 20px;
+  padding: 22px 20px;
+  margin-bottom: 14px;
+  background: var(--deep);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.18);
+}
+
+.recap-hero-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.recap-hero h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem; color: white;
+}
+
+.recap-hero .month-chip {
+  font-size: 0.72rem; font-weight: 800;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.08);
+  padding: 4px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+.stat-item {
+  background: rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.stat-item .lbl {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.45); font-weight: 800; margin-bottom: 6px;
+}
+
+.stat-item .val {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem; font-weight: 700; color: white;
+}
+
+.stat-item .val.hi { color: var(--child-color); }
+
+.grand-total-row {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.grand-total-row .lbl { font-size: 0.82rem; font-weight: 800; color: rgba(255,255,255,0.8); }
+.grand-total-row .sub { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 2px; font-weight: 600; }
+.grand-total-row .amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem; font-weight: 700;
+  color: var(--child-color);
+  transition: color 0.3s;
+}
+
+/* ══════════════════════════════════
+   PARAMÈTRES ENFANT
+══════════════════════════════════ */
+.color-picker { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.color-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.color-dot.selected { border-color: var(--deep); transform: scale(1.15); }
+.color-dot:active { transform: scale(0.9); }
+
+/* ══════════════════════════════════
+   PARAMÈTRES GLOBAUX
+══════════════════════════════════ */
+.settings-section { margin-bottom: 6px; }
+.settings-section-title {
+  font-size: 0.68rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--mid); margin-bottom: 8px; padding-left: 4px;
+}
+
+/* ══════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════ */
+.empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--light);
+}
+.empty .icon { font-size: 3rem; margin-bottom: 12px; }
+.empty p { font-size: 0.88rem; line-height: 1.6; font-weight: 600; }
+
+/* ══════════════════════════════════
+   TOAST
+══════════════════════════════════ */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bottom) + 16px);
+  left: 14px; right: 14px;
+  background: var(--deep); color: white;
+  padding: 13px 18px; border-radius: 16px;
+  font-size: 0.9rem; font-weight: 700;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.ok { border-left: 4px solid var(--green); }
+.toast.err { border-left: 4px solid var(--red); }
+.toast.inf { border-left: 4px solid var(--child-color); }
+
+/* ══════════════════════════════════
+   MODAL
+══════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 500;
+  align-items: flex-end;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 26px 26px 0 0;
+  padding: 20px 18px calc(var(--safe-bottom) + 20px);
+  width: 100%; max-height: 85vh; overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal h3 { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--deep); margin-bottom:16px; }
+
+/* ══════════════════════════════════
+   DIVIDER & UTILS
+══════════════════════════════════ */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 800;
+  background: var(--child-light); color: var(--child-dark);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ══════════════════════════════════
+   PRINT
+══════════════════════════════════ */
+@media print {
+  .header, .sub-tabs, .btn, .entry-del, .toast { display: none !important; }
+  body { overflow: visible; background: white; }
+  .content { overflow: visible; padding: 0; }
+  .recap-hero { background: white; color: black; border: 2px solid #ccc; box-shadow: none; }
+  .recap-hero h2, .stat-item .lbl { color: #333 !important; }
+  .stat-item .val, .grand-total-row .amount { color: black !important; }
+  .stat-item { border: 1px solid #ddd; background: #f9f9f9; }
+  .grand-total-row { background: #f0f0f0; border-color: #333; }
+  .grand-total-row .lbl { color: #333 !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <h1>🍀 <span id="headerAccent">Pointeuse AM</span></h1>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="monthLabel"></span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+  <div class="child-tabs" id="childTabs"></div>
+</div>
+
+<!-- SUB-TABS -->
+<div class="sub-tabs" id="subTabs">
+  <button class="sub-tab active" onclick="showSubTab('pointage', this)">⏱ Pointage</button>
+  <button class="sub-tab" onclick="showSubTab('journal', this)">📋 Journal</button>
+  <button class="sub-tab" onclick="showSubTab('recap', this)">💶 Récap</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL PARAMÈTRES ENFANT -->
+<div class="modal-overlay" id="modalChildSettings" onclick="closeModalIfOverlay(event,'modalChildSettings')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modalChildTitle">⚙️ Paramètres enfant</h3>
+    <div class="field">
+      <label>Prénom</label>
+      <input type="text" id="mPrenom" placeholder="Prénom de l'enfant">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Date de naissance</label>
+        <input type="date" id="mNaissance">
+      </div>
+      <div class="field">
+        <label>Tarif spécifique €/h</label>
+        <input type="number" id="mTarif" placeholder="Défaut" step="0.10" min="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Couleur</label>
+      <div class="color-picker" id="colorPicker"></div>
+    </div>
+    <div style="height:14px;"></div>
+    <button class="btn btn-child" id="modalSaveBtn" onclick="saveChildSettings()">💾 Enregistrer</button>
+    <button class="btn btn-ghost" onclick="closeModal('modalChildSettings')">Annuler</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════
+const COLORS = ['#E07A5F','#3D9A7A','#5B7FBF','#9B72B0','#D4875A','#4AABB8'];
+const COLOR_LIGHTS = ['#F9EBE7','#E6F4F0','#E8EEF8','#F2EBF7','#FAF0E6','#E6F6F8'];
+const COLOR_DARKS = ['#B85C44','#2D7A5A','#3D5F9F','#7A5290','#A86540','#2A8B98'];
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  params: { nom:'', agrement:'', tel:'', tarif:4.50, indemnite:3.00, repas:0.00, conges:10 },
+  children: [
+    { id:1, prenom:'Enfant 1', naissance:'', colorIdx:0, tarif:null },
+    { id:2, prenom:'Enfant 2', naissance:'', colorIdx:1, tarif:null },
+    { id:3, prenom:'Enfant 3', naissance:'', colorIdx:2, tarif:null },
+    { id:4, prenom:'Enfant 4', naissance:'', colorIdx:3, tarif:null },
+    { id:5, prenom:'Enfant 5', naissance:'', colorIdx:4, tarif:null },
+    { id:6, prenom:'Enfant 6', naissance:'', colorIdx:5, tarif:null }
+  ],
+  pointages: []
+};
+
+let currentMonth, currentYear;
+let activeChildIdx = 0; // 0-5 = enfants, 6 = réglages globaux
+let activeSubTab = 'pointage';
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+  loadState();
+  const now = new Date();
+  currentMonth = now.getMonth();
+  currentYear = now.getFullYear();
+  updateMonthLabel();
+  applyChildTheme(state.children[activeChildIdx].colorIdx);
+  renderChildTabs();
+  renderSubTabs();
+  renderContent();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+function loadState() {
+  try {
+    const s = localStorage.getItem('pam_state_v2');
+    if (s) {
+      const loaded = JSON.parse(s);
+      state = { ...state, ...loaded };
+      // ensure 6 children
+      while (state.children.length < 6) {
+        const i = state.children.length;
+        state.children.push({ id: Date.now()+i, prenom:`Enfant ${i+1}`, naissance:'', colorIdx:i, tarif:null });
+      }
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem('pam_state_v2', JSON.stringify(state));
+}
+
+// ═══════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════
+function applyChildTheme(colorIdx) {
+  const root = document.documentElement;
+  root.style.setProperty('--child-color', COLORS[colorIdx]);
+  root.style.setProperty('--child-light', COLOR_LIGHTS[colorIdx]);
+  root.style.setProperty('--child-dark', COLOR_DARKS[colorIdx]);
+}
+
+// ═══════════════════════════════════════════════════════
+// MONTH NAV
+// ═══════════════════════════════════════════════════════
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  updateMonthLabel();
+  renderChildTabs();
+  renderContent();
+}
+
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${MONTHS_SHORT[currentMonth]} ${currentYear}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// CHILD TABS RENDER
+// ═══════════════════════════════════════════════════════
+function renderChildTabs() {
+  const container = document.getElementById('childTabs');
+  const today = new Date().toISOString().slice(0,10);
+
+  let html = state.children.map((child, i) => {
+    const isPresent = state.pointages.some(p =>
+      p.childId === child.id && p.date === today && !p.heureDepart
+    );
+    const initial = child.prenom ? child.prenom[0].toUpperCase() : '?';
+    return `<button class="child-tab ${activeChildIdx===i?'active':''} ${isPresent?'is-present':''}"
+      onclick="selectChild(${i})" style="${activeChildIdx===i?`--child-color:${COLORS[child.colorIdx]}`:''}">
+      <div class="tab-avatar" style="${activeChildIdx===i?`background:${COLORS[child.colorIdx]}`:''}">
+        ${initial}
+      </div>
+      <span>${child.prenom.split(' ')[0]}</span>
+      <div class="present-dot"></div>
+      <div class="tab-bar" style="${activeChildIdx===i?`background:${COLORS[child.colorIdx]}`:''}"></div>
+    </button>`;
+  }).join('');
+
+  // Onglet réglages globaux
+  html += `<button class="child-tab settings-tab ${activeChildIdx===6?'active':''}" onclick="selectChild(6)">
+    <div class="tab-avatar">⚙️</div>
+    <span>Réglages</span>
+    <div class="tab-bar" style="${activeChildIdx===6?'background:rgba(255,255,255,0.5)':''}"></div>
+  </button>`;
+
+  container.innerHTML = html;
+
+  // Scroll to active
+  setTimeout(() => {
+    const tabs = container.querySelectorAll('.child-tab');
+    if (tabs[activeChildIdx]) tabs[activeChildIdx].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════════
+// SELECT CHILD / NAVIGATION
+// ═══════════════════════════════════════════════════════
+function selectChild(idx) {
+  activeChildIdx = idx;
+  if (idx < 6) {
+    applyChildTheme(state.children[idx].colorIdx);
+    document.getElementById('headerAccent').textContent = state.children[idx].prenom;
+    showSubTabs(true);
+    if (activeSubTab === 'settings') activeSubTab = 'pointage';
+  } else {
+    // Réglages globaux
+    document.getElementById('headerAccent').textContent = 'Réglages';
+    showSubTabs(false);
+    activeSubTab = 'settings';
+  }
+  renderChildTabs();
+  renderSubTabs();
+  renderContent();
+}
+
+function showSubTabs(visible) {
+  document.getElementById('subTabs').style.display = visible ? 'flex' : 'none';
+}
+
+function renderSubTabs() {
+  if (activeChildIdx === 6) { showSubTabs(false); return; }
+  showSubTabs(true);
+  document.querySelectorAll('.sub-tab').forEach(btn => btn.classList.remove('active'));
+  const map = { pointage: 0, journal: 1, recap: 2 };
+  const btns = document.querySelectorAll('.sub-tab');
+  if (btns[map[activeSubTab]]) btns[map[activeSubTab]].classList.add('active');
+}
+
+function showSubTab(name, btn) {
+  activeSubTab = name;
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderContent();
+}
+
+// ═══════════════════════════════════════════════════════
+// CONTENT ROUTER
+// ═══════════════════════════════════════════════════════
+function renderContent() {
+  const content = document.getElementById('mainContent');
+  if (activeChildIdx === 6) {
+    content.innerHTML = renderSettingsPage();
+    loadSettingsValues();
+    return;
+  }
+  const child = state.children[activeChildIdx];
+  if (activeSubTab === 'pointage') content.innerHTML = renderPointagePage(child);
+  else if (activeSubTab === 'journal') content.innerHTML = renderJournalPage(child);
+  else if (activeSubTab === 'recap') content.innerHTML = renderRecapPage(child);
+  content.scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+// PAGE: POINTAGE
+// ═══════════════════════════════════════════════════════
+function renderPointagePage(child) {
+  const today = new Date().toISOString().slice(0,10);
+  const now = new Date().toTimeString().slice(0,5);
+  const enCours = state.pointages.find(p => p.childId === child.id && p.date === today && !p.heureDepart);
+  const age = child.naissance ? calcAge(child.naissance) : '';
+  const tarif = getChildTarif(child);
+
+  const statusHtml = enCours
+    ? `<div class="child-status-badge"><div class="dot-pulse"></div>En garde depuis ${enCours.heureArrivee}</div>`
+    : `<div class="child-status-badge" style="background:rgba(0,0,0,0.15);">🏠 Absent</div>`;
+
+  return `
+    <div class="child-banner" style="background:${COLORS[child.colorIdx]}">
+      <div class="child-banner-left">
+        <div class="child-banner-avatar">${child.prenom[0].toUpperCase()}</div>
+        <div>
+          <div class="child-banner-name">${child.prenom}</div>
+          <div class="child-banner-detail">${age ? age + ' · ' : ''}${tarif.toFixed(2)} €/h</div>
+        </div>
+      </div>
+      ${statusHtml}
+    </div>
+
+    <div class="card">
+      <div class="card-title">✅ Arrivée</div>
+      <div class="row2">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="arrDate" value="${today}">
+        </div>
+        <div class="field">
+          <label>Heure</label>
+          <input type="time" id="arrHeure" value="${now}">
+        </div>
+      </div>
+      <button class="btn btn-arrive" onclick="pointArrivee(${child.id})">✅ Enregistrer l'arrivée</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚪 Départ</div>
+      <div class="row2">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="depDate" value="${today}">
+        </div>
+        <div class="field">
+          <label>Heure</label>
+          <input type="time" id="depHeure" value="${now}">
+        </div>
+      </div>
+      <button class="btn btn-depart" onclick="pointDepart(${child.id})">🚪 Enregistrer le départ</button>
+    </div>
+
+    <div style="text-align:center; margin-top:4px;">
+      <button class="btn btn-ghost btn-sm" style="width:auto;display:inline-flex;" onclick="openChildSettings(${activeChildIdx})">
+        ✏️ Modifier les infos de ${child.prenom}
+      </button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// PAGE: JOURNAL
+// ═══════════════════════════════════════════════════════
+function renderJournalPage(child) {
+  const data = getChildMonthData(child.id);
+  if (!data.length) {
+    return `<div class="empty"><div class="icon">📅</div><p>Aucune présence enregistrée<br>pour ${child.prenom}<br>en ${MONTHS[currentMonth]} ${currentYear}</p></div>`;
+  }
+  const sorted = [...data].sort((a,b) => a.date.localeCompare(b.date));
+  const indem = state.params.indemnite || 3;
+  const repas = state.params.repas || 0;
+  const tarif = getChildTarif(child);
+
+  const items = sorted.map(p => {
+    const dur = p.heureDepart ? calcDuree(p.heureArrivee, p.heureDepart) : null;
+    const sal = dur !== null ? (dur/60)*tarif : 0;
+    const d = new Date(p.date+'T12:00:00');
+    const weekdays = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    return `<div class="entry ${!p.heureDepart?'en-cours':''}">
+      <div class="entry-top">
+        <div>
+          <div class="entry-date">${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}</div>
+          <div class="entry-weekday">${weekdays[d.getDay()]}</div>
+        </div>
+        <button class="entry-del" onclick="supprimerPointage(${p.id})">✕</button>
+      </div>
+      <div class="entry-grid">
+        <div class="entry-cell"><div class="lbl">Arrivée</div><div class="val">${p.heureArrivee}</div></div>
+        <div class="entry-cell"><div class="lbl">Départ</div><div class="val">${p.heureDepart ? p.heureDepart : '<span class="enc">En cours</span>'}</div></div>
+        <div class="entry-cell"><div class="lbl">Durée</div><div class="val dur">${dur!==null?formatDuree(dur):'—'}</div></div>
+        <div class="entry-cell"><div class="lbl">Salaire</div><div class="val sal">${dur!==null?formatEuro(sal+(indem+repas)):'—'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="entry-list">${items}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PAGE: RÉCAP
+// ═══════════════════════════════════════════════════════
+function renderRecapPage(child) {
+  const data = getChildMonthData(child.id);
+  const completed = data.filter(p => p.heureDepart);
+  const tarif = getChildTarif(child);
+  const p = state.params;
+
+  let totalMins = 0;
+  let salHeures = 0;
+  completed.forEach(x => {
+    const dur = calcDuree(x.heureArrivee, x.heureDepart);
+    totalMins += dur;
+    salHeures += (dur/60)*tarif;
+  });
+
+  const jours = new Set(completed.map(x => x.date)).size;
+  const salIndem = jours * (p.indemnite || 3);
+  const salRepas = jours * (p.repas || 0);
+  const salBrut = salHeures + salIndem + salRepas;
+  const cp = salBrut * ((p.conges||10)/100);
+  const total = salBrut + cp;
+
+  const monthStr = `${MONTHS[currentMonth]} ${currentYear}`;
+
+  return `
+    <div class="recap-hero">
+      <div class="recap-hero-header">
+        <h2>💶 ${child.prenom}</h2>
+        <div class="month-chip">${monthStr}</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="lbl">Heures totales</div>
+          <div class="val">${formatDuree(totalMins)}</div>
+        </div>
+        <div class="stat-item">
+          <div class="lbl">Jours de garde</div>
+          <div class="val">${jours}</div>
+        </div>
+        <div class="stat-item">
+          <div class="lbl">Salaire heures</div>
+          <div class="val hi">${formatEuro(salHeures)}</div>
+        </div>
+        <div class="stat-item">
+          <div class="lbl">Indem. entretien</div>
+          <div class="val hi">${formatEuro(salIndem)}</div>
+        </div>
+        ${salRepas > 0 ? `<div class="stat-item"><div class="lbl">Indem. repas</div><div class="val hi">${formatEuro(salRepas)}</div></div>` : ''}
+        <div class="stat-item">
+          <div class="lbl">Congés (${p.conges||10}%)</div>
+          <div class="val">${formatEuro(cp)}</div>
+        </div>
+      </div>
+      <div class="grand-total-row">
+        <div>
+          <div class="lbl">💰 Total à verser</div>
+          <div class="sub">Salaire + Indem. + CP</div>
+        </div>
+        <div class="amount" style="color:${COLORS[child.colorIdx]}">${formatEuro(total)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Détail</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${renderDetailRow('Tarif horaire', `${tarif.toFixed(2)} €/h`)}
+        ${renderDetailRow('Heures gardées', formatDuree(totalMins))}
+        ${renderDetailRow('Salaire brut heures', formatEuro(salHeures))}
+        ${renderDetailRow('Indem. entretien (×'+jours+' j)', formatEuro(salIndem))}
+        ${salRepas > 0 ? renderDetailRow('Indem. repas (×'+jours+' j)', formatEuro(salRepas)) : ''}
+        <div class="divider"></div>
+        ${renderDetailRow('Sous-total brut', formatEuro(salBrut), true)}
+        ${renderDetailRow(`Congés payés (${p.conges||10}%)`, formatEuro(cp))}
+        <div class="divider"></div>
+        ${renderDetailRow('TOTAL NET À VERSER', formatEuro(total), true)}
+      </div>
+    </div>
+
+    <button class="btn btn-dark" onclick="window.print()">🖨️ Imprimer ce récapitulatif</button>
+  `;
+}
+
+function renderDetailRow(label, value, bold = false) {
+  return `<div style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
+    <span style="font-size:0.85rem; font-weight:${bold?'800':'600'}; color:${bold?'var(--deep)':'var(--mid)'};">${label}</span>
+    <span style="font-size:0.9rem; font-weight:800; color:${bold?'var(--child-color)':'var(--deep)'};">${value}</span>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PAGE: RÉGLAGES GLOBAUX
+// ═══════════════════════════════════════════════════════
+function renderSettingsPage() {
+  return `
+    <div class="settings-section">
+      <div class="settings-section-title">👤 Mon profil</div>
+      <div class="card">
+        <div class="field"><label>Nom & Prénom</label><input type="text" id="sNom" placeholder="Marie Dupont" oninput="saveSettings()"></div>
+        <div class="row2">
+          <div class="field"><label>N° Agrément</label><input type="text" id="sAgrement" placeholder="2024-01-AM" oninput="saveSettings()"></div>
+          <div class="field"><label>Téléphone</label><input type="tel" id="sTel" placeholder="06 xx xx xx xx" oninput="saveSettings()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">💶 Tarification par défaut</div>
+      <div class="card">
+        <div class="row2">
+          <div class="field"><label>Tarif horaire (€/h)</label><input type="number" id="sTarif" step="0.10" min="0" oninput="saveSettings()"></div>
+          <div class="field"><label>Indem. entretien (€/j)</label><input type="number" id="sIndemnite" step="0.10" min="0" oninput="saveSettings()"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Indem. repas (€/j)</label><input type="number" id="sRepas" step="0.10" min="0" oninput="saveSettings()"></div>
+          <div class="field"><label>Congés payés (%)</label><input type="number" id="sConges" step="0.5" min="0" max="15" oninput="saveSettings()"></div>
+        </div>
+        <p style="font-size:0.75rem; color:var(--mid); margin-top:8px; font-weight:600; line-height:1.5;">
+          💡 Chaque enfant peut avoir un tarif horaire différent, à définir dans l'onglet de cet enfant (bouton ✏️ Modifier).
+        </p>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">👶 Enfants (6 onglets)</div>
+      <div class="card">
+        ${state.children.map((child, i) => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding: 10px 0; ${i>0?'border-top:1px solid var(--border)':''}">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:38px;height:38px;border-radius:50%;background:${COLORS[child.colorIdx]};display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:white;">
+                ${child.prenom[0].toUpperCase()}
+              </div>
+              <div>
+                <div style="font-weight:800;font-size:0.9rem;">${child.prenom}</div>
+                <div style="font-size:0.72rem;color:var(--mid);font-weight:600;">${child.tarif ? child.tarif.toFixed(2)+' €/h' : 'Tarif défaut'}</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openChildSettings(${i})" style="padding:7px 12px;font-size:0.8rem;">✏️ Modifier</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">🗂️ Données</div>
+      <div class="card">
+        <button class="btn btn-ghost" onclick="exportData()" style="margin-bottom:8px;">📤 Exporter les données (JSON)</button>
+        <button class="btn btn-danger" onclick="clearData()">🗑️ Effacer toutes les données</button>
+      </div>
+    </div>
+  `;
+}
+
+function loadSettingsValues() {
+  const p = state.params;
+  const f = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+  f('sNom', p.nom); f('sAgrement', p.agrement); f('sTel', p.tel);
+  f('sTarif', p.tarif ?? 4.50); f('sIndemnite', p.indemnite ?? 3.00);
+  f('sRepas', p.repas ?? 0); f('sConges', p.conges ?? 10);
+}
+
+function saveSettings() {
+  const g = id => document.getElementById(id)?.value;
+  state.params = {
+    nom: g('sNom'), agrement: g('sAgrement'), tel: g('sTel'),
+    tarif: parseFloat(g('sTarif')) || 4.50,
+    indemnite: parseFloat(g('sIndemnite')) || 3.00,
+    repas: parseFloat(g('sRepas')) || 0,
+    conges: parseFloat(g('sConges')) || 10
+  };
+  saveState();
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL CHILD SETTINGS
+// ═══════════════════════════════════════════════════════
+function openChildSettings(idx) {
+  const child = state.children[idx];
+  document.getElementById('modalChildTitle').textContent = `✏️ ${child.prenom}`;
+  document.getElementById('mPrenom').value = child.prenom;
+  document.getElementById('mNaissance').value = child.naissance || '';
+  document.getElementById('mTarif').value = child.tarif || '';
+
+  // Color picker
+  const cp = document.getElementById('colorPicker');
+  cp.innerHTML = COLORS.map((c, i) =>
+    `<div class="color-dot ${child.colorIdx===i?'selected':''}" style="background:${c}" onclick="selectColor(${i})"></div>`
+  ).join('');
+
+  document.getElementById('modalChildSettings').dataset.editIdx = idx;
+  document.getElementById('modalChildSettings').classList.add('open');
+}
+
+function selectColor(idx) {
+  document.querySelectorAll('.color-dot').forEach((d,i) => d.classList.toggle('selected', i===idx));
+}
+
+function saveChildSettings() {
+  const modal = document.getElementById('modalChildSettings');
+  const idx = parseInt(modal.dataset.editIdx);
+  const child = state.children[idx];
+  const prenom = document.getElementById('mPrenom').value.trim();
+  if (!prenom) { showToast('⚠️ Prénom requis', 'err'); return; }
+
+  const selectedDot = document.querySelector('.color-dot.selected');
+  const colorIdx = selectedDot ? [...document.querySelectorAll('.color-dot')].indexOf(selectedDot) : child.colorIdx;
+
+  child.prenom = prenom;
+  child.naissance = document.getElementById('mNaissance').value;
+  const t = document.getElementById('mTarif').value;
+  child.tarif = t ? parseFloat(t) : null;
+  child.colorIdx = colorIdx;
+
+  saveState();
+  closeModal('modalChildSettings');
+  applyChildTheme(colorIdx);
+  document.getElementById('headerAccent').textContent = prenom;
+  showToast(`✅ ${prenom} mis à jour`, 'ok');
+  renderChildTabs();
+  renderContent();
+}
+
+// ═══════════════════════════════════════════════════════
+// POINTAGE
+// ═══════════════════════════════════════════════════════
+function pointArrivee(childId) {
+  const date = document.getElementById('arrDate')?.value;
+  const heure = document.getElementById('arrHeure')?.value;
+  if (!date || !heure) { showToast('⚠️ Date et heure requises', 'err'); return; }
+  const existing = state.pointages.find(p => p.childId===childId && p.date===date && !p.heureDepart);
+  if (existing) { showToast('⚠️ Déjà arrivé(e) à '+existing.heureArrivee, 'err'); return; }
+  state.pointages.push({ id: Date.now(), childId, date, heureArrivee: heure, heureDepart: null });
+  saveState();
+  const child = state.children.find(c => c.id===childId);
+  showToast(`✅ Arrivée de ${child.prenom} à ${heure}`, 'ok');
+  renderChildTabs();
+  renderContent();
+}
+
+function pointDepart(childId) {
+  const date = document.getElementById('depDate')?.value;
+  const heure = document.getElementById('depHeure')?.value;
+  if (!date || !heure) { showToast('⚠️ Date et heure requises', 'err'); return; }
+  const p = state.pointages.find(pt => pt.childId===childId && pt.date===date && !pt.heureDepart);
+  if (!p) { showToast('❌ Aucune arrivée enregistrée ce jour', 'err'); return; }
+  if (heure <= p.heureArrivee) { showToast('⚠️ Départ doit être après l\'arrivée', 'err'); return; }
+  p.heureDepart = heure;
+  saveState();
+  const dur = calcDuree(p.heureArrivee, heure);
+  const child = state.children.find(c => c.id===childId);
+  showToast(`🚪 Départ de ${child.prenom} — ${formatDuree(dur)}`, 'ok');
+  renderChildTabs();
+  renderContent();
+}
+
+function supprimerPointage(id) {
+  if (!confirm('Supprimer ce pointage ?')) return;
+  state.pointages = state.pointages.filter(p => p.id !== id);
+  saveState();
+  showToast('🗑️ Pointage supprimé', 'inf');
+  renderContent();
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function getChildMonthData(childId) {
+  return state.pointages.filter(p => {
+    const d = new Date(p.date);
+    return p.childId === childId && d.getMonth()===currentMonth && d.getFullYear()===currentYear;
+  });
+}
+
+function getChildTarif(child) {
+  return child.tarif || state.params.tarif || 4.50;
+}
+
+function calcDuree(h1, h2) {
+  const toMins = h => { const [hh,mm] = h.split(':').map(Number); return hh*60+mm; };
+  return toMins(h2) - toMins(h1);
+}
+
+function formatDuree(m) {
+  if (m < 0) return '—';
+  return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+
+function formatEuro(v) {
+  return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+}
+
+function calcAge(dateNaissance) {
+  const diff = Date.now() - new Date(dateNaissance).getTime();
+  const age = new Date(diff);
+  const years = Math.abs(age.getUTCFullYear() - 1970);
+  const months = age.getUTCMonth();
+  if (years >= 1) return `${years} an${years>1?'s':''}`;
+  return `${months} mois`;
+}
+
+// ═══════════════════════════════════════════════════════
+// DATA MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='pointeuse_sauvegarde.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 Données exportées', 'ok');
+}
+
+function clearData() {
+  if (!confirm('⚠️ Effacer TOUS les pointages ? Cette action est irréversible.')) return;
+  state.pointages = [];
+  saveState();
+  showToast('🗑️ Pointages effacés', 'inf');
+  renderContent();
+  renderChildTabs();
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalIfOverlay(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg, type='inf') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
